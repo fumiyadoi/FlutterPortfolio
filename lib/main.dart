@@ -1,115 +1,74 @@
+import 'package:firebase_core/firebase_core.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'firebase_options.dart';
 import 'package:flutter/material.dart';
+import 'login_state_model.dart';
 
-void main() {
-  runApp(const MyApp());
+// アプリを立ち上げたときに最初に開く画面
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  // ProviderScopeで囲むことで、どこでもriverpodのproviderにアクセスできる
+  runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({Key? key}) : super(key: key);
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
+        // テーマカラーをここで指定
+        primarySwatch: colorCustom,
       ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: const MyHomePage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({Key? key, required this.title}) : super(key: key);
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class MyHomePage extends HookConsumerWidget {
+  const MyHomePage({Key? key}) : super(key: key);
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headline4,
-            ),
-          ],
+        // FutureBuilderを使って、遷移する画面を決める関数を実行してから表示するようにする
+        // FutureBuilderの使い方：https://zenn.dev/sqer/articles/db20a4d735fb7e5928ba
+        // 後で関数実行中にスピナーを表示するようにしたい
+        child: FutureBuilder(
+          // checkUserLoginはLoginState_model.dartに記述している
+          future: checkUserLogin(ref),
+          builder: (BuildContext context, AsyncSnapshot<dynamic> snapshot) {
+            // 遷移する画面が取得できたらその画面を表示する
+            if (snapshot.hasData) {
+              return snapshot.data;
+              // 関数の実行が失敗したらエラーを表示
+            } else {
+              return const Text("error");
+            }
+          },
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
+
+Map<int, Color> color = {
+  50: const Color.fromRGBO(63, 227, 168, .1),
+  100: const Color.fromRGBO(63, 227, 168, .2),
+  200: const Color.fromRGBO(63, 227, 168, .3),
+  300: const Color.fromRGBO(63, 227, 168, .4),
+  400: const Color.fromRGBO(63, 227, 168, .5),
+  500: const Color.fromRGBO(63, 227, 168, .6),
+  600: const Color.fromRGBO(63, 227, 168, .7),
+  700: const Color.fromRGBO(63, 227, 168, .8),
+  800: const Color.fromRGBO(63, 227, 168, .9),
+  900: const Color.fromRGBO(63, 227, 168, 1),
+};
+
+MaterialColor colorCustom = MaterialColor(0xFF3FE3A8, color);
